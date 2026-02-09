@@ -2,6 +2,8 @@
 
 fork from Quiet.js project.
 
+1.step 1
+
 Quiet.js
 ===========
 
