@@ -1,0 +1,114 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Send bianry data via sound.</title>
+
+    <script type="text/javascript" src="/quiet.js"></script>
+    <script>
+       Quiet.init({
+          profilesPrefix: "/",
+          memoryInitializerPrefix: "/",
+          libfecPrefix: "/"
+      });
+    </script>
+    <script async type="text/javascript" src="/quiet-emscripten.js"></script>
+  </head>
+  <body>
+    <div class="hidden" data-quiet-profile-name="audible"></div>
+    <div class="wrapper">
+      <header>
+        <h1>Send bianry data via sound.</h1>
+      </header>
+      <br/>
+      
+      <input type="file" id="fileInput" disabled = true>
+      <pre id="send-status">waiting DOMContentLoaded</pre>
+      file hash:<pre id="file-hash"></pre>
+      <br>
+      <pre id="err-msg"></pre>
+      
+    </div>
+    
+    <script>
+    
+      var globalBtnFile;
+      var globalFileHash;
+      var globalStatus;
+      var globalErrmsg;      
+      var golbalFileArrayBuffer;
+      //var globalProfilename =  'audible';
+      var globalProfilename =  'cable-64k';  
+
+      
+      document.addEventListener("DOMContentLoaded", function () {
+        globalBtnFile = document.getElementById('fileInput');
+        globalStatus = document.getElementById('send-status');
+        globalErrmsg= document.getElementById('err-msg');
+        globalFileHash= document.getElementById('file-hash');
+        
+        globalStatus.textContent = 'waiting onQuietReady';
+        Quiet.addReadyCallback(onQuietReady, onQuietFail);
+        
+      });
+      
+      document.getElementById('fileInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            this.disabled = true;
+            
+            golbalFileArrayBuffer = await file.arrayBuffer();
+            const hash = await hashArrayBuffer(golbalFileArrayBuffer);
+            globalFileHash.textContent = hash;
+            //window.alert(hash);
+
+            globalStatus.textContent =  'sending filename...';
+            var transmitFilename;
+            transmitFilename = Quiet.transmitter({profile: globalProfilename, onFinish: onTransmitFilenameFinish});      
+            transmitFilename.transmit(Quiet.str2ab(file.name)); 
+            
+        });
+        
+      function onQuietReady() {
+          globalBtnFile.disabled = false;
+          globalStatus.textContent = 'pls click choose file';
+      };
+
+      function onQuietFail(reason) {
+          console.log("quiet failed to initialize: " + reason);
+          globalErrmsg.textContent += "\r\nSorry, it looks like there was a problem with this example (" + reason + ")";
+      };
+      
+      
+      function onTransmitFilenameFinish() {      
+          globalStatus.textContent =  'sending hash...';
+          var transmitHash;
+          transmitHash = Quiet.transmitter({profile: globalProfilename, onFinish: onTransmitHashFinish});      
+          transmitHash.transmit(Quiet.str2ab(globalFileHash.textContent)); 
+      };
+      
+      function onTransmitHashFinish() {
+        globalStatus.textContent =  'send file data...';    
+        var transmitFileData;
+        transmitFileData = Quiet.transmitter({profile: globalProfilename, onFinish: onTransmitFileDataFinish});
+        transmitFileData.transmit(golbalFileArrayBuffer);         
+      };        
+      function onTransmitFileDataFinish() {
+        globalStatus.textContent =   'send finished.';    
+      };       
+     async function hashArrayBuffer(buffer) {
+      // Generate the hash
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer); // returns a Promise<ArrayBuffer>
+      // Convert the ArrayBuffer to a Uint8Array for easier processing
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      // Convert the bytes to a hexadecimal string
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return hashHex;
+    }
+    
+    </script>
+
+  </body>
+  
+</html>

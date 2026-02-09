@@ -1,0 +1,144 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>receive binary data via sound</title>
+
+    <script type="text/javascript" src="/quiet.js"></script>
+   <script>
+		Quiet.init({
+		    profilesPrefix: "/",
+		    memoryInitializerPrefix: "/",
+		    libfecPrefix: "/"
+		});
+    </script>
+    <script async type="text/javascript" src="/quiet-emscripten.js"></script>
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>receive binary data via sound.</h1>
+      </header>
+1.要求麦克风或LINE IN要接入。<br>
+2.要求CHROME已启用权限麦克风。<br>
+2.刷新网页以重新接收。<br>
+<br>
+    <button id='receive-binary-button'  disabled = true ><font size="15"> Receive binary </font> </button>
+    <br><br> <br> status: <br> <pre id='msg-status'>waiting  DOMContentLoaded.</pre>     
+    file name:<pre id='file-name'></pre>     
+    file hash:<pre id='file-hash'></pre>     
+    <pre id='msg-errors'></pre>     
+    <br/><br/><br/>
+   </div>
+  <script>
+    var globalTimerId;
+    var globalErrors;
+    var globalStatus;
+    var globalPayload = new ArrayBuffer(0);
+    var globalHashElement;
+    var globalFilenameElement;
+    var globalReceiver;
+     
+    document.addEventListener("DOMContentLoaded", function () {
+      globalErrors = document.getElementById('msg-errors') ;
+      globalStatus = document.getElementById('msg-status') ;
+      globalFilenameElement = document.getElementById('file-name') ;
+      globalHashElement = document.getElementById('file-hash') ;
+      //window.alert('addEventListener_click');	
+      Quiet.addReadyCallback(onQuietReady, onQuietFail);
+      globalStatus.textContent = 'waiting onQuietReady';
+    });
+
+    document.getElementById('receive-binary-button').addEventListener('click',  function () {
+        var profilename = 'cable-64k';
+        //var profilename = 'audible';
+        globalReceiver = Quiet.receiver({profile: profilename,
+		       onReceive: onReceive,
+		       onCreateFail: onReceiverCreateFail,
+		       onReceiveFail: onReceiveFail
+        });
+        globalStatus.textContent = 'pls send data in peer.';
+        this.disabled = true;
+    });
+    function onQuietFail(reason) {
+      //window.alert('onQuietFail	');
+      //console.log("quiet failed to initialize: " + reason);
+      globalErrors.textContent = globalErrors.textContent  + '\r\nonQuietFail:'  + reason;
+      //document.getElementById('receive-status').textContent = globalErrmsg;
+      //document.getElementById('receive-button').disabled = false;
+    };
+
+    function onQuietReady() {
+      //window.alert('ready');
+      globalStatus.textContent = 'pls press button to receive.';
+      document.getElementById('receive-binary-button').disabled=false;
+      //window.alert('onQuietReady');
+    };
+    function onReceive(recvPayload) {
+      clearTimeout(globalTimerId);
+      var d = new Date();
+      var ms = d.getMilliseconds();
+
+      if (globalFilenameElement.textContent === '') {
+        globalStatus.textContent =  d.toString() + '.' + ms.toString() + ': Got filename.';
+        globalFilenameElement.textContent = Quiet.ab2str(recvPayload);
+      } else if (globalHashElement.textContent === '') {
+        globalStatus.textContent =  d.toString() + '.' + ms.toString() + ': Got hash.';
+        globalHashElement.textContent = Quiet.ab2str(recvPayload);
+      } else {
+        globalStatus.textContent =  d.toString() + '.' + ms.toString() + ': Got file data trunck.';
+        globalPayload = Quiet.mergeab(globalPayload, recvPayload);
+      }
+      //window.alert('onReceive');
+      globalTimerId = setTimeout(stopReceive, 3000);
+    };
+    async function stopReceive() {
+      clearTimeout(globalTimerId);
+      globalReceiver.destroy();
+      globalStatus.textContent = '超过3秒未有收到信号，视同传输结束, verify hash...';
+      var filehash = await hashArrayBuffer(globalPayload);
+      if (filehash === globalHashElement.textContent) {
+         globalStatus.textContent = 'hash verify successful.downloading...reflesh page for next receive.';       
+
+         const blob = new Blob([globalPayload]);
+         const url = URL.createObjectURL(blob);
+         const link = document.createElement('a');
+         link.href = url;
+         link.setAttribute('download', globalFilenameElement.textContent);
+         document.body.appendChild(link);
+         link.click();
+         document.body.removeChild(link);
+         URL.revokeObjectURL(url);
+      } else {
+         globalStatus.textContent = 'hash verify failed.';                 
+      }
+
+   }
+    function onReceiverCreateFail(reason) {
+      //window.alert('onReceiverCreateFail');
+      //console.log("failed to create quiet receiver: " + reason);
+      //document.getElementById('receive-status').textContent =
+      globalErrors.textContent = globalErrors.textContent  + '\r\nonReceiverCreateFail:' +  reason + ', maybe:  it looks like this example is not supported by your browser. Please give permission to use the microphone or try again in Google Chrome or Microsoft Edge.';
+      //document.getElementById('receive-button').disabled = false;
+    };
+
+    function onReceiveFail(num_fails) {
+      //window.alert('onReceiveFail');
+      globalErrors.textContent = globalErrors.textContent  + '\r\nonReceiveFail:' +  'maybe:  We did not quite get that. It looks like you tried to transmit something. You may need to move the transmitter closer to the receiver and set the volume to 50%.';
+      //document.getElementById('receive-button').disabled = false;
+    };
+
+    async function hashArrayBuffer(buffer) {
+      // Generate the hash
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer); // returns a Promise<ArrayBuffer>
+      // Convert the ArrayBuffer to a Uint8Array for easier processing
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      // Convert the bytes to a hexadecimal string
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return hashHex;
+    }
+
+  </script>
+  </body>
+</html>

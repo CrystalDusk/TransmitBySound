@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Send Text</title>
+
+    <script type="text/javascript" src="/quiet.js"></script>
+    <script>
+      Quiet.init({
+        profilesPrefix: "/",
+        memoryInitializerPrefix: "/",
+        libfecPrefix: "/"
+    });
+    </script>
+    <script async type="text/javascript" src="/quiet-emscripten.js"></script>
+  </head>
+  <body>
+
+        <h1>Send Text</h1>
+        <textarea rows="10" cols = "100" id = 'text-input'></textarea>
+        <br><button id="btn-send" disabled=true>Send</button>
+        <h3>status:</h3>
+        <p id = 'send-status'>waiting onQuietReady</p>
+        <h3>error:</h3>
+        <p id = 'send-errors'></p>
+    <script>
+
+      var globalElementText;
+      var globalElementStatus;
+      var globalElementErrors;     
+      var globalElementBtnSend;   
+      var globalTransmit;
+      //var globalProfilename =  'audible';
+      var globalProfilename =  'cable-64k';
+
+      globalElementText = document.getElementById("text-input");
+      globalElementStatus = document.getElementById("send-status");
+      globalElementErrors = document.getElementById("send-errors");       
+      globalElementBtnSend = document.getElementById("btn-send");            
+      Quiet.addReadyCallback(onQuietReady, onQuietFail);
+          
+      globalElementBtnSend.addEventListener('click', function () {
+          globalElementBtnSend.disabled = true;
+          globalElementBtnSend.textContent = 'sending...';
+          var payload = globalElementText.value;
+          if (payload === "") {
+              onTransmitFinish();
+              return;
+          }
+          globalTransmit.transmit(Quiet.str2ab(payload));
+      });
+      //});
+       
+
+
+      function onQuietReady() {
+          globalElementStatus.textContent = 'pls click button to send.';
+          globalTransmit = Quiet.transmitter({profile: globalProfilename, onFinish: onTransmitFinish});
+          globalElementBtnSend.disabled = false;
+      };
+      
+      function onTransmitFinish() {
+          //textbox.focus();
+          //btn.addEventListener('click', onClick, false);
+          globalElementBtnSend.disabled = false;
+          globalElementBtnSend.textContent = 'send'
+      };
+
+
+      function onQuietFail(reason) {
+          console.log("quiet failed to initialize: " + reason);
+          warningbox.classList.remove("hidden");
+          warningbox.textContent = "Sorry, it looks like there was a problem with this example (" + reason + ")";
+      };
+
+      
+
+
+    </script>
+  </body>
+</html>

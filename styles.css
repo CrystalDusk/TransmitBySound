@@ -1,0 +1,28 @@
+.grid-container {
+    display: grid;
+    /* Creates 2 columns, each taking up an equal fraction of the space (1fr) */
+    grid-template-columns: 1fr 1fr; 
+    /* Optional: sets the gap between buttons */
+    gap: 20px; 
+    /* Optional: centers the grid on the page */
+    margin: 50px auto; 
+    max-width: 400px;
+}
+
+.grid-item button {
+    /* Makes the button fill the entire anchor/grid-item area */
+    width: 100%; 
+    padding: 20px;
+    font-size: 16px;
+    cursor: pointer;
+    /* Optional styling */
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.grid-item button:hover {
+    background-color: #0056b3;
+}

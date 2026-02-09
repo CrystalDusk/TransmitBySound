@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Receive Text</title>
+
+    <script type="text/javascript" src="/quiet.js"></script>
+   <script>
+		Quiet.init({
+		    profilesPrefix: "/",
+		    memoryInitializerPrefix: "/",
+		    libfecPrefix: "/"
+		});
+    </script>
+    <script async type="text/javascript" src="/quiet-emscripten.js"></script>
+  </head>
+  <body>
+
+  <h1>receive text via sound.</h1>
+
+  <h2>注意</h2>
+  <p>1.要求麦克风或LINE IN要接入。</p>
+  <p>2.要求CHROME已启用权限麦克风。</p>
+  <p>3.刷新网页以重新接收。</p>
+
+  <button id='receive-text-button'  disabled = true ><font size="15"> Receive text </font> </button>
+
+  <h2>status:</h3><p id='msg-status'>waiting  DOMContentLoaded.</p>     
+  <h2>received text:</h3><textarea id=recv-text cols=150 rows =10></textarea>
+  <h2>error info:</h3><p id='msg-errors'></p>     
+
+  <script>
+    
+    var globalErrors;
+    var globalStatus;
+    var globalRecvTextElement; 
+    document.addEventListener("DOMContentLoaded", function () {
+      globalErrors = document.getElementById('msg-errors') ;
+      globalStatus = document.getElementById('msg-status') ;
+      globalRecvTextElement = document.getElementById('recv-text') ;
+      //window.alert('addEventListener_click');	
+      Quiet.addReadyCallback(onQuietReady, onQuietFail);
+      globalStatus.textContent = 'waiting onQuietReady';
+    });
+
+    document.getElementById('receive-text-button').addEventListener('click',  function () {
+        var profilename = 'cable-64k';
+        //var profilename = 'audible';
+        globalReceiver = Quiet.receiver({profile: profilename,
+		       onReceive: onReceive,
+		       onCreateFail: onReceiverCreateFail,
+		       onReceiveFail: onReceiveFail
+        });
+        globalStatus.textContent = 'pls send text in peer.';
+        this.disabled = true;
+    });
+    function onQuietFail(reason) {
+      //window.alert('onQuietFail	');
+      //console.log("quiet failed to initialize: " + reason);
+      globalErrors.textContent = globalErrors.textContent  + '\r\nonQuietFail:'  + reason;
+      //document.getElementById('receive-status').textContent = globalErrmsg;
+      //document.getElementById('receive-button').disabled = false;
+    };
+
+    function onQuietReady() {
+      //window.alert('ready');
+      globalStatus.textContent = 'pls press button to receive.';
+      document.getElementById('receive-text-button').disabled=false;
+      //window.alert('onQuietReady');
+    };
+    function onReceive(recvPayload) {
+  
+      var d = new Date();
+      var ms = d.getMilliseconds();
+ 
+      globalStatus.textContent =  d.toString() + '.' + ms.toString() + ': Got data trunck.';
+      globalRecvTextElement.value += Quiet.ab2str(recvPayload)
+      //window.alert('onReceive');
+
+    };
+    
+    function onReceiverCreateFail(reason) {
+      //window.alert('onReceiverCreateFail');
+      //console.log("failed to create quiet receiver: " + reason);
+      //document.getElementById('receive-status').textContent =
+      globalErrors.textContent = globalErrors.textContent  + '\r\nonReceiverCreateFail:' +  reason + ', maybe:  it looks like this example is not supported by your browser. Please give permission to use the microphone or try again in Google Chrome or Microsoft Edge.';
+      //document.getElementById('receive-button').disabled = false;
+    };
+
+    function onReceiveFail(num_fails) {
+      //window.alert('onReceiveFail');
+      globalErrors.textContent = globalErrors.textContent  + '\r\nonReceiveFail:' +  'maybe:  We did not quite get that. It looks like you tried to transmit something. You may need to move the transmitter closer to the receiver and set the volume to 50%.';
+      //document.getElementById('receive-button').disabled = false;
+    };
+
+
+
+  </script>
+  </body>
+</html>
