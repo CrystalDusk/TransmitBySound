@@ -1,8 +1,8 @@
 
 
-fork from Quiet.js project.
+Fork from Quiet.js project, usage:
 
-1.step 1
+1.install makecert, link: https://github.com/FiloSottile/mkcert/releases
 
 Quiet.js
 ===========
