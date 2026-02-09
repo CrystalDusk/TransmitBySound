@@ -2,7 +2,16 @@
 
 Fork from Quiet.js project, usage:
 
-1.install makecert, link: https://github.com/FiloSottile/mkcert/releases
+1. download makecert, link:  https://github.com/FiloSottile/mkcert/releases
+2. generate ca and install:  mkcert -install
+3. generate a certificate:   mkcert localhost
+4. modify app.py according to actual certificate file names.
+5. in both send and receive end, cd TransmitBySound, run app.py using python.
+6. access: https://localhost  at the receiving end, click 'recevie text' or 'recive file',
+   click 'receive' button, when prompt ready, access: https://localhost at the sending end to send text or file.
+7. developer enviroment:
+    windows 10, python 3.11.9, chrome 144.0.7559.110
+    kylin V10 linux, python 3.8, chromium 100  
 
 Quiet.js
 ===========
