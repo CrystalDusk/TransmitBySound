@@ -16,63 +16,71 @@
     <script async type="text/javascript" src="/quiet-emscripten.js"></script>
   </head>
   <body>
-    <div class="wrapper">
-      <header>
-        <h1>receive binary data via sound.</h1>
-      </header>
-1.要求麦克风或LINE IN要接入。<br>
-2.要求CHROME已启用权限麦克风。<br>
-2.刷新网页以重新接收。<br>
-<br>
-    <button id='receive-binary-button'  disabled = true ><font size="15"> Receive binary </font> </button>
-    <br><br> <br> status: <br> <pre id='msg-status'>waiting  DOMContentLoaded.</pre>     
-    file name:<pre id='file-name'></pre>     
-    file hash:<pre id='file-hash'></pre>     
-    <pre id='msg-errors'></pre>     
-    <br/><br/><br/>
-   </div>
-  <script>
-    var globalTimerId;
-    var globalErrors;
-    var globalStatus;
-    var globalPayload = new ArrayBuffer(0);
-    var globalHashElement;
-    var globalFilenameElement;
-    var globalReceiver;
-     
-    document.addEventListener("DOMContentLoaded", function () {
-      globalErrors = document.getElementById('msg-errors') ;
-      globalStatus = document.getElementById('msg-status') ;
-      globalFilenameElement = document.getElementById('file-name') ;
-      globalHashElement = document.getElementById('file-hash') ;
-      //window.alert('addEventListener_click');	
-      Quiet.addReadyCallback(onQuietReady, onQuietFail);
-      globalStatus.textContent = 'waiting onQuietReady';
-    });
+    <h2>Receive file</h2>
+    <h4>Select a profile:</h4>
+    <select id="quiet-profile"><option value="cable-64k">cable-64k</option></select>
+    <button id='quiet-btn' style="padding: 5px 20px;" disabled = 'true' > Receive file </button>
+    <h4>Status:</h4>
+    <p id = 'quiet-status'>waiting onQuietReady...</p>
+    <h4>File info</h4>
+    name:&nbsp;<span id = 'quiet-name'></span>
+    &emsp;size:&nbsp;<span id = 'quiet-size'></span>   
+    &emsp;hash:&nbsp;<span id = 'quiet-hash'></span>      
 
-    document.getElementById('receive-binary-button').addEventListener('click',  function () {
-        var profilename = 'cable-64k';
-        //var profilename = 'audible';
-        globalReceiver = Quiet.receiver({profile: profilename,
-		       onReceive: onReceive,
-		       onCreateFail: onReceiverCreateFail,
-		       onReceiveFail: onReceiveFail
-        });
-        globalStatus.textContent = 'pls send data in peer.';
-        this.disabled = true;
+    <h4>Error:</h4>
+    <p id = 'quiet-errors'></p>
+    
+  <script>
+  /*
+    var globalElementStatus;
+    var globalElementErrors;     
+    var globalElementBtn; 
+    var globalElementHash;
+    var globalElementName;
+    var globalElementSize;     */
+    var globalReceiver = null;
+    //var globalProfilename;
+    var globalPayload = new ArrayBuffer(0);
+    var globalTimerId;
+    
+    var globalElementStatus = document.getElementById("quiet-status");
+    var globalElementErrors = document.getElementById("quiet-errors");       
+    var globalElementBtn = document.getElementById("quiet-btn");          
+    var globalElementName = document.getElementById("quiet-name");
+    var globalElementSize = document.getElementById("quiet-size");       
+    var globalElementHash = document.getElementById("quiet-hash"); 
+    var globalElementProfile = document.getElementById("quiet-profile");     
+    populateDropdown() ;
+          
+    Quiet.addReadyCallback(onQuietReady, onQuietFail);
+
+    globalElementBtn.addEventListener('click',  function () {
+      //var profilename = 'cable-64k';
+      //var profilename = 'audible';
+      
+      //globalProfilename = document.getElementById("quiet-profile").value;
+      if (globalElementProfile.value === '') {window.alert('please select a profile.'); return;} 
+      
+      globalReceiver = Quiet.receiver({profile: globalElementProfile.value,
+         onReceive: onReceive,
+         onCreateFail: onReceiverCreateFail,
+         onReceiveFail: onReceiveFail
+      });
+      globalElementStatus.textContent = 'Please send file in sender end.';
+      this.disabled = true;
     });
     function onQuietFail(reason) {
       //window.alert('onQuietFail	');
       //console.log("quiet failed to initialize: " + reason);
-      globalErrors.textContent = globalErrors.textContent  + '\r\nonQuietFail:'  + reason;
+      globalElementErrors.textContent   += ( '\r\nonQuietFail:'  + reason);
       //document.getElementById('receive-status').textContent = globalErrmsg;
       //document.getElementById('receive-button').disabled = false;
     };
 
     function onQuietReady() {
       //window.alert('ready');
-      globalStatus.textContent = 'pls press button to receive.';
-      document.getElementById('receive-binary-button').disabled=false;
+      globalElementStatus.textContent = 'Please press button to receive.';
+      globalElementBtn.disabled=false;
       //window.alert('onQuietReady');
     };
     function onReceive(recvPayload) {
@@ -80,14 +88,17 @@
       var d = new Date();
       var ms = d.getMilliseconds();
 
-      if (globalFilenameElement.textContent === '') {
-        globalStatus.textContent =  d.toString() + '.' + ms.toString() + ': Got filename.';
-        globalFilenameElement.textContent = Quiet.ab2str(recvPayload);
-      } else if (globalHashElement.textContent === '') {
-        globalStatus.textContent =  d.toString() + '.' + ms.toString() + ': Got hash.';
-        globalHashElement.textContent = Quiet.ab2str(recvPayload);
+      if (globalElementName.innerText === '') {
+        globalElementStatus.textContent =  d.toString() + '.' + ms.toString() + ': Got filename.';
+        globalElementName.innerText = Quiet.ab2str(recvPayload);
+      } else if (globalElementSize.innerText === '') {
+        globalElementStatus.textContent =  d.toString() + '.' + ms.toString() + ': Got size.';
+        globalElementSize.innerText = Quiet.ab2str(recvPayload);
+      } else if (globalElementHash.innerText === '') {
+        globalElementStatus.textContent =  d.toString() + '.' + ms.toString() + ': Got hash.';
+        globalElementHash.innerText = Quiet.ab2str(recvPayload);
       } else {
-        globalStatus.textContent =  d.toString() + '.' + ms.toString() + ': Got file data trunck.';
+        globalElementStatus.textContent =  d.toString() + '.' + ms.toString() + ': Got file data trunck.';
         globalPayload = Quiet.mergeab(globalPayload, recvPayload);
       }
       //window.alert('onReceive');
@@ -96,22 +107,22 @@
     async function stopReceive() {
       clearTimeout(globalTimerId);
       globalReceiver.destroy();
-      globalStatus.textContent = '超过3秒未有收到信号，视同传输结束, verify hash...';
+      globalElementStatus.textContent = '超过3秒未有收到信号，视同传输结束, verify hash...';
       var filehash = await hashArrayBuffer(globalPayload);
-      if (filehash === globalHashElement.textContent) {
-         globalStatus.textContent = 'hash verify successful.downloading...reflesh page for next receive.';       
+      if (filehash === globalElementHash.innerText) {
+         globalElementStatus.textContent = 'hash verify successful.downloading...reflesh page for next receive.';       
 
          const blob = new Blob([globalPayload]);
          const url = URL.createObjectURL(blob);
          const link = document.createElement('a');
          link.href = url;
-         link.setAttribute('download', globalFilenameElement.textContent);
+         link.setAttribute('download', globalElementName.innerText);
          document.body.appendChild(link);
          link.click();
          document.body.removeChild(link);
          URL.revokeObjectURL(url);
       } else {
-         globalStatus.textContent = 'hash verify failed.';                 
+         globalElementStatus.textContent = 'hash verify failed.';                 
       }
 
    }
@@ -119,13 +130,13 @@
       //window.alert('onReceiverCreateFail');
       //console.log("failed to create quiet receiver: " + reason);
       //document.getElementById('receive-status').textContent =
-      globalErrors.textContent = globalErrors.textContent  + '\r\nonReceiverCreateFail:' +  reason + ', maybe:  it looks like this example is not supported by your browser. Please give permission to use the microphone or try again in Google Chrome or Microsoft Edge.';
+      globalElementErrors.textContent   +=( '\r\nonReceiverCreateFail:' +  reason + ', maybe:  it looks like this example is not supported by your browser. Please give permission to use the microphone or try again in Google Chrome or Microsoft Edge.');
       //document.getElementById('receive-button').disabled = false;
     };
 
     function onReceiveFail(num_fails) {
       //window.alert('onReceiveFail');
-      globalErrors.textContent = globalErrors.textContent  + '\r\nonReceiveFail:' +  'maybe:  We did not quite get that. It looks like you tried to transmit something. You may need to move the transmitter closer to the receiver and set the volume to 50%.';
+      globalElementErrors.textContent +=( '\r\nonReceiveFail:' +  'maybe:  We did not quite get that. It looks like you tried to transmit something. You may need to move the transmitter closer to the receiver and set the volume to 50%.');
       //document.getElementById('receive-button').disabled = false;
     };
 
@@ -138,7 +149,22 @@
       const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       return hashHex;
     }
+    async function populateDropdown() {
+      try {
+          const response = await fetch('quiet-profiles.json');
+          const data = await response.json(); // Parse the JSON data
 
+          for (const key in data) {
+            //console.log(key);
+              const option = document.createElement('option');
+              option.value = key; // Set the value attribute
+              option.textContent = key; // Set the visible text
+              globalElementProfile.appendChild(option); // Add the option to the select element
+          }
+      } catch (error) {
+          console.error('An error occurred fetching the JSON:', error);
+      }
+    }  
   </script>
   </body>
 </html>

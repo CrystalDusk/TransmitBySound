@@ -16,63 +16,100 @@
     <script async type="text/javascript" src="/quiet-emscripten.js"></script>
   </head>
   <body>
-    <div class="hidden" data-quiet-profile-name="audible"></div>
-    <div class="wrapper">
-      <header>
-        <h1>Send bianry data via sound.</h1>
-      </header>
-      <br/>
+    <h2>Send file</h2>
+    <h4>Select a profile:</h4>
+    <select id="quiet-profile"><option value="cable-64k">cable-64k</option></select>
+    <h4>Choose a file to send:</h4>      
+    <input type="file" id="quiet-file" disabled = 'true'>
+    <button  style="padding: 5px 20px;" id="quiet-btn" disabled = 'true'>Send</button>    
+    <h4>Status:</h4>
+    <p id = 'quiet-status'>waiting onQuietReady...</p>
+    <h4>File hash:</h4>
+    <p id="quiet-hash"></p>
+    <h4>Error:</h4>
+    <p id = 'quiet-errors'></p>
       
-      <input type="file" id="fileInput" disabled = true>
-      <pre id="send-status">waiting DOMContentLoaded</pre>
-      file hash:<pre id="file-hash"></pre>
-      <br>
-      <pre id="err-msg"></pre>
-      
-    </div>
+
     
     <script>
-    
-      var globalBtnFile;
-      var globalFileHash;
-      var globalStatus;
-      var globalErrmsg;      
-      var golbalFileArrayBuffer;
-      //var globalProfilename =  'audible';
-      var globalProfilename =  'cable-64k';  
+    /*
+      var globalElementFileInput;
+      var globalElementHash;
+      var globalElementStatus;
+      var globalElementErrors;   
+      var globalElementBtnSend;*/
+      
+      var globalFile = null;
+      var globalFileArrayBuffer;
+      //var globalProfilename = ''; 
+      
+      var globalTransmiter = null;   
 
       
-      document.addEventListener("DOMContentLoaded", function () {
-        globalBtnFile = document.getElementById('fileInput');
-        globalStatus = document.getElementById('send-status');
-        globalErrmsg= document.getElementById('err-msg');
-        globalFileHash= document.getElementById('file-hash');
+      var globalElementFileInput = document.getElementById('quiet-file');
+      var globalElementStatus = document.getElementById('quiet-status');
+      var globalElementErrors= document.getElementById('quiet-errors');
+      var globalElementHash= document.getElementById('quiet-hash');
+      var globalElementProfile = document.getElementById("quiet-profile");   
+      var globalElementBtnSend = document.getElementById("quiet-btn");      
+      
+      populateDropdown() ;
+      Quiet.addReadyCallback(onQuietReady, onQuietFail);   
+      
+      
+      globalElementFileInput.addEventListener('change', async function(e) {
+        globalFile = e.target.files[0];
+        if (!globalFile) return;
+        this.disabled = true;
         
-        globalStatus.textContent = 'waiting onQuietReady';
-        Quiet.addReadyCallback(onQuietReady, onQuietFail);
-        
+        globalElementStatus.textContent = 'reading file...';
+        globalFileArrayBuffer = await globalFile.arrayBuffer();
+        globalElementStatus.textContent = 'calculating hash...';
+        globalElementHash.textContent = await hashArrayBuffer(globalFileArrayBuffer);
+
+        //window.alert(hash);
+        globalElementBtnSend.disabled = false;
+        globalElementStatus.textContent = 'please click button to send.';
       });
-      
-      document.getElementById('fileInput').addEventListener('change', async function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            this.disabled = true;
-            
-            golbalFileArrayBuffer = await file.arrayBuffer();
-            const hash = await hashArrayBuffer(golbalFileArrayBuffer);
-            globalFileHash.textContent = hash;
-            //window.alert(hash);
-
-            globalStatus.textContent =  'sending filename...';
-            var transmitFilename;
-            transmitFilename = Quiet.transmitter({profile: globalProfilename, onFinish: onTransmitFilenameFinish});      
-            transmitFilename.transmit(Quiet.str2ab(file.name)); 
-            
-        });
         
+      globalElementBtnSend.addEventListener('click', function () { 
+      
+        globalProfilename = document.getElementById("quiet-profile").value;
+      
+        if (globalElementProfile.value === '') {window.alert('please select a profile.'); return;} 
+        if (globalFile === null) {window.alert('please choose a file.'); return;} 
+        
+        globalElementFileInput.disabled = true;
+        globalElementBtnSend.disabled = true;
+        globalElementStatus.textContent =  'sending filename...';
+        globalTransmiter = Quiet.transmitter({profile: globalElementProfile.value, onFinish: function() {onTransmitFinish(1)}});
+        globalTransmiter.transmit(Quiet.str2ab(globalFile.name)); 
+      });
+
+      function onTransmitFinish(stage) {
+        console.log(stage);
+        globalTransmiter.destroy();
+        globalTransmiter = null;
+        if (stage===1) {
+          globalElementStatus.textContent =  'sending file size...';
+          globalTransmiter = Quiet.transmitter({profile: globalProfilename, onFinish: function() {onTransmitFinish(2)}});      
+          globalTransmiter.transmit(Quiet.str2ab(String(globalFile.size)));            
+        } else if (stage===2) {
+          globalElementStatus.textContent =  'sending hash...';
+          globalTransmiter = Quiet.transmitter({profile: globalProfilename, onFinish: function() {onTransmitFinish(3)}});      
+          globalTransmiter.transmit(Quiet.str2ab(globalElementHash.textContent));            
+        } else if (stage===3) {
+          globalElementStatus.textContent =  'sending file data...';
+          globalTransmiter = Quiet.transmitter({profile: globalProfilename, onFinish: function() {onTransmitFinish(4)}});      
+          globalTransmiter.transmit(globalFileArrayBuffer);            
+        } else if (stage==4) {
+           globalElementStatus.textContent =  'send finished.';
+        }
+
+      }
       function onQuietReady() {
-          globalBtnFile.disabled = false;
-          globalStatus.textContent = 'pls click choose file';
+          globalElementFileInput.disabled = false;
+          globalElementStatus.textContent = 'please select a profile, choose a file to send.';
       };
 
       function onQuietFail(reason) {
@@ -80,33 +117,34 @@
           globalErrmsg.textContent += "\r\nSorry, it looks like there was a problem with this example (" + reason + ")";
       };
       
-      
-      function onTransmitFilenameFinish() {      
-          globalStatus.textContent =  'sending hash...';
-          var transmitHash;
-          transmitHash = Quiet.transmitter({profile: globalProfilename, onFinish: onTransmitHashFinish});      
-          transmitHash.transmit(Quiet.str2ab(globalFileHash.textContent)); 
-      };
-      
-      function onTransmitHashFinish() {
-        globalStatus.textContent =  'send file data...';    
-        var transmitFileData;
-        transmitFileData = Quiet.transmitter({profile: globalProfilename, onFinish: onTransmitFileDataFinish});
-        transmitFileData.transmit(golbalFileArrayBuffer);         
-      };        
-      function onTransmitFileDataFinish() {
-        globalStatus.textContent =   'send finished.';    
-      };       
+   
      async function hashArrayBuffer(buffer) {
-      // Generate the hash
-      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer); // returns a Promise<ArrayBuffer>
-      // Convert the ArrayBuffer to a Uint8Array for easier processing
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      // Convert the bytes to a hexadecimal string
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      return hashHex;
+        // Generate the hash
+        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer); // returns a Promise<ArrayBuffer>
+        // Convert the ArrayBuffer to a Uint8Array for easier processing
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        // Convert the bytes to a hexadecimal string
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return hashHex;
     }
     
+    async function populateDropdown() {
+        try {
+            const response = await fetch('quiet-profiles.json');
+            const data = await response.json(); // Parse the JSON data
+
+            for (const key in data) {
+              //console.log(key);
+                const option = document.createElement('option');
+                option.value = key; // Set the value attribute
+                option.textContent = key; // Set the visible text
+                globalElementProfile.appendChild(option); // Add the option to the select element
+            }
+        } catch (error) {
+            console.error('An error occurred fetching the JSON:', error);
+        }
+      }   
+      
     </script>
 
   </body>

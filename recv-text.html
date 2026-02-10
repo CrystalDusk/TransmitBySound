@@ -17,65 +17,76 @@
   </head>
   <body>
 
-  <h1>receive text via sound.</h1>
+    <h2>Receive text</h2>
+    <h4>Select a profile:</h4>
+    <select id="quiet-profile"><option value="cable-64k">cable-64k</option></select>
+    <button id='quiet-btn' style="padding: 5px 20px;" disabled = 'true' > Receive text </button>
+    <h4>Text received:</h4>
+    <textarea rows="10" cols = "100" id = 'quiet-text'></textarea>
+    <h4>Status:</h4>
+    <p id = 'quiet-status'>waiting onQuietReady...</p>
+    <h4>Error:</h4>
+    <p id = 'quiet-errors'></p>
 
-  <h2>注意</h2>
-  <p>1.要求麦克风或LINE IN要接入。</p>
-  <p>2.要求CHROME已启用权限麦克风。</p>
-  <p>3.刷新网页以重新接收。</p>
-
-  <button id='receive-text-button'  disabled = true ><font size="15"> Receive text </font> </button>
-
-  <h2>status:</h3><p id='msg-status'>waiting  DOMContentLoaded.</p>     
-  <h2>received text:</h3><textarea id=recv-text cols=150 rows =10></textarea>
-  <h2>error info:</h3><p id='msg-errors'></p>     
-
-  <script>
+    <script>
     
-    var globalErrors;
-    var globalStatus;
-    var globalRecvTextElement; 
-    document.addEventListener("DOMContentLoaded", function () {
-      globalErrors = document.getElementById('msg-errors') ;
-      globalStatus = document.getElementById('msg-status') ;
-      globalRecvTextElement = document.getElementById('recv-text') ;
+      //var globalElementText;
+      //var globalElementStatus;
+      //var globalElementErrors;     
+      //var globalElementBtn;   
+      var globalReceiver = null;
+      //var globalProfilename;
+
+      var globalElementText = document.getElementById("quiet-text");
+      var globalElementStatus = document.getElementById("quiet-status");
+      var globalElementErrors = document.getElementById("quiet-errors");       
+      var globalElementBtn = document.getElementById("quiet-btn");            
+      var globalElementProfile = document.getElementById("quiet-profile");   
+
+      populateDropdown() ;
       //window.alert('addEventListener_click');	
       Quiet.addReadyCallback(onQuietReady, onQuietFail);
-      globalStatus.textContent = 'waiting onQuietReady';
-    });
+      //globalElementStatus.textContent = 'waiting onQuietReady';
 
-    document.getElementById('receive-text-button').addEventListener('click',  function () {
-        var profilename = 'cable-64k';
-        //var profilename = 'audible';
-        globalReceiver = Quiet.receiver({profile: profilename,
-		       onReceive: onReceive,
-		       onCreateFail: onReceiverCreateFail,
-		       onReceiveFail: onReceiveFail
+      globalElementBtn.addEventListener('click',  function () {
+          //var profilename = 'cable-64k';
+          //var profilename = 'audible';
+        //globalProfilename = document.getElementById("quiet-profile").value;
+        //window.alert('ahaha');
+        if (globalElementProfile.value === '') {
+          window.alert('please select a profile.'); 
+          return;
+        } 
+        
+        globalReceiver = Quiet.receiver({profile: globalElementProfile.value,
+           onReceive: onReceive,
+           onCreateFail: onReceiverCreateFail,
+           onReceiveFail: onReceiveFail
         });
-        globalStatus.textContent = 'pls send text in peer.';
+        globalElementStatus.textContent = 'Please send text in sender end.';
         this.disabled = true;
-    });
-    function onQuietFail(reason) {
-      //window.alert('onQuietFail	');
-      //console.log("quiet failed to initialize: " + reason);
-      globalErrors.textContent = globalErrors.textContent  + '\r\nonQuietFail:'  + reason;
-      //document.getElementById('receive-status').textContent = globalErrmsg;
-      //document.getElementById('receive-button').disabled = false;
-    };
+      });
+      function onQuietFail(reason) {
+        //window.alert('onQuietFail	');
+        //console.log("quiet failed to initialize: " + reason);
+        globalElementErrors.textContent +=  ('\r\nonQuietFail:'  + reason);
+        //document.getElementById('receive-status').textContent = globalErrmsg;
+        //document.getElementById('receive-button').disabled = false;
+      };
 
-    function onQuietReady() {
-      //window.alert('ready');
-      globalStatus.textContent = 'pls press button to receive.';
-      document.getElementById('receive-text-button').disabled=false;
-      //window.alert('onQuietReady');
-    };
+      function onQuietReady() {
+        //window.alert('ready');
+        globalElementStatus.textContent = 'Please press button to receive.';
+        globalElementBtn.disabled=false;
+        //window.alert('onQuietReady');
+      };
     function onReceive(recvPayload) {
   
       var d = new Date();
       var ms = d.getMilliseconds();
  
-      globalStatus.textContent =  d.toString() + '.' + ms.toString() + ': Got data trunck.';
-      globalRecvTextElement.value += Quiet.ab2str(recvPayload)
+      globalElementStatus.textContent =  d.toString() + '.' + ms.toString() + ': Got data trunck.';
+      globalElementText.value += Quiet.ab2str(recvPayload)
       //window.alert('onReceive');
 
     };
@@ -84,16 +95,31 @@
       //window.alert('onReceiverCreateFail');
       //console.log("failed to create quiet receiver: " + reason);
       //document.getElementById('receive-status').textContent =
-      globalErrors.textContent = globalErrors.textContent  + '\r\nonReceiverCreateFail:' +  reason + ', maybe:  it looks like this example is not supported by your browser. Please give permission to use the microphone or try again in Google Chrome or Microsoft Edge.';
+      globalElementErrors.textContent += ( '\r\nonReceiverCreateFail:' +  reason + ', maybe:  it looks like this example is not supported by your browser. Please give permission to use the microphone or try again in Google Chrome or Microsoft Edge.');
       //document.getElementById('receive-button').disabled = false;
     };
 
     function onReceiveFail(num_fails) {
       //window.alert('onReceiveFail');
-      globalErrors.textContent = globalErrors.textContent  + '\r\nonReceiveFail:' +  'maybe:  We did not quite get that. It looks like you tried to transmit something. You may need to move the transmitter closer to the receiver and set the volume to 50%.';
+      globalElementErrors.textContent += ( '\r\nonReceiveFail:' +  'maybe:  We did not quite get that. It looks like you tried to transmit something. You may need to move the transmitter closer to the receiver and set the volume to 50%.');
       //document.getElementById('receive-button').disabled = false;
     };
+    async function populateDropdown() {
+      try {
+          const response = await fetch('quiet-profiles.json');
+          const data = await response.json(); // Parse the JSON data
 
+          for (const key in data) {
+            //console.log(key);
+              const option = document.createElement('option');
+              option.value = key; // Set the value attribute
+              option.textContent = key; // Set the visible text
+              globalElementProfile.appendChild(option); // Add the option to the select element
+          }
+      } catch (error) {
+          console.error('An error occurred fetching the JSON:', error);
+      }
+    }  
 
 
   </script>
