@@ -3,6 +3,8 @@
 Fork from Quiet.js project, usage:
 
 1. download makecert, link:  https://github.com/FiloSottile/mkcert/releases
+    chmod +x mkcert-v*-linux-amd64
+    sudo cp mkcert-v*-linux-amd64 /usr/local/bin/mkcert
 2. generate ca and install:  mkcert -install
 3. generate a certificate:   mkcert localhost
 4. modify app.py according to actual certificate file names.
