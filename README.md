@@ -1,19 +1,24 @@
 
-
-Fork from Quiet.js project, usage:
-
-1. download makecert, link:  https://github.com/FiloSottile/mkcert/releases
-    chmod +x mkcert-v*-linux-amd64
-    sudo cp mkcert-v*-linux-amd64 /usr/local/bin/mkcert
-2. generate ca and install:  mkcert -install
-3. generate a certificate:   mkcert localhost
-4. modify app.py according to actual certificate file names.
-5. in both send and receive end, cd TransmitBySound, run app.py using python.
-6. access: https://localhost  at the receiving end, click 'recevie text' or 'recive file',
-   click 'receive' button, when prompt ready, access: https://localhost at the sending end to send text or file.
-7. developer enviroment:
-    windows 10, python 3.11.9, chrome 144.0.7559.110
-    kylin V10 linux, python 3.8, chromium 100  
+Fork from Quiet.js project, developer enviroment:
+  windows 10, python 3.11.9, edge Version 144
+  kylin V10 linux, python 3.8, chromium 100 
+    
+windows install:
+  1. double click launch_windows.bat, auto launch edge to  access: http://localhost:7939
+ 
+linux install:
+  1. download makecert, link:  https://github.com/FiloSottile/mkcert/releases
+      chmod +x mkcert-v*-linux-amd64
+      sudo cp mkcert-v*-linux-amd64 /usr/local/bin/mkcert
+  2. generate ca and install:  mkcert -install
+  3. generate a certificate:   mkcert localhost
+  4. modify https.py according to actual certificate file names.
+  5. run launch_linux.sh
+  6. access https://localhost:7939 using chrome.
+  
+transfer:
+  1. at the receiving end, click 'recevie text' or 'recive file',
+  2. at the sending end, click 'send text' or 'send file' to send text or file.
 
 Quiet.js
 ===========
