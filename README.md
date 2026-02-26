@@ -4,8 +4,10 @@ Fork from Quiet.js project, developer enviroment:
   kylin V10 linux, python 3.8, chromium 100 
     
 windows install:
-  1. double click launch_windows.bat, auto launch edge to  access: http://localhost:7939
- 
+  1. (python install needed) double click launch_windows.bat, auto launch edge to  access: http://localhost:7939
+  - or - 
+  2. (python install not needed) double click server_http.exe (builded using pyinstaller --onefile server_http.py)
+  
 linux install:
   1. download makecert, link:  https://github.com/FiloSottile/mkcert/releases
       chmod +x mkcert-v*-linux-amd64
